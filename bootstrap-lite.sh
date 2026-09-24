@@ -174,8 +174,16 @@ else
     if [[ ! -e /swapfile ]]; then
         fallocate -l "$SWAP_SIZE" /swapfile || dd if=/dev/zero of=/swapfile bs=1M count=$(( ${SWAP_SIZE%G} * 1024 )) status=progress
         chmod 600 /swapfile
-        if ! has_cmd mkswap; then\n        info "mkswap not found; installing util-linux..."\n        apt-get install -y util-linux\n    fi\n\n    has_cmd mkswap || die "mkswap is unavailable even after installing util-linux"\n\n    mkswap /swapfile >/dev/null
     fi
+
+    if ! has_cmd mkswap; then
+        info "mkswap not found; installing util-linux..."
+        apt-get install -y util-linux
+    fi
+
+    has_cmd mkswap || die "mkswap is unavailable even after installing util-linux"
+
+    mkswap /swapfile >/dev/null
 
     swapon /swapfile
     grep -qE '^[[:space:]]*/swapfile[[:space:]]' /etc/fstab ||
