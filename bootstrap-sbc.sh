@@ -7,19 +7,19 @@ set -Eeuo pipefail
 IFS=$'\n\t'
 
 SCRIPT_NAME="$(basename "$0")"
-LOG="/var/log/server-\${SCRIPT_NAME%.sh}.log"
+LOG="/var/log/server-${SCRIPT_NAME%.sh}.log"
 SYSCTL_FILE="/etc/sysctl.d/99-sbc-server.conf"
 BBR_FILE="/etc/sysctl.d/99-sbc-bbr.conf"
 JOURNAL_FILE="/etc/systemd/journald.conf.d/10-sbc-server.conf"
 
-if [[ "\${EUID}" -ne 0 ]]; then
+if [[ "${EUID}" -ne 0 ]]; then
     if command -v sudo >/dev/null 2>&1; then exec sudo --preserve-env=PATH bash "$0" "$@"; fi
     echo "Root privileges required."; exit 1
 fi
 
 [[ -r /etc/os-release ]] || { echo "Cannot detect OS."; exit 1; }
 . /etc/os-release
-if [[ "\${ID}" != "debian" && "\${ID}" != "ubuntu" && "\${ID_LIKE:-}" != *debian* ]]; then
+if [[ "${ID}" != "debian" && "${ID}" != "ubuntu" && "${ID_LIKE:-}" != *debian* ]]; then
     echo "Debian/Ubuntu/Armbian only."; exit 1
 fi
 
@@ -37,14 +37,14 @@ exec > >(tee -a "$LOG") 2> >(tee -a "$LOG" >&2)
 info "============================================================"
 info " SBC Lightweight Optimizer"
 info " Host: $(hostname)"
-info " OS: \${PRETTY_NAME:-unknown}"
+info " OS: ${PRETTY_NAME:-unknown}"
 info "============================================================"
 
 RAM_MB="$(awk '/MemTotal:/ {print int($2/1024)}' /proc/meminfo)"
 CPU_THREADS="$(nproc)"
 ROOT_AVAIL_MB="$(df -Pm / | awk 'NR==2 {print $4}')"
 ARCH="$(dpkg --print-architecture 2>/dev/null || uname -m)"
-info "RAM: \${RAM_MB} MB | CPU threads: \${CPU_THREADS} | Arch: \${ARCH} | Root free: \${ROOT_AVAIL_MB} MB"
+info "RAM: ${RAM_MB} MB | CPU threads: ${CPU_THREADS} | Arch: ${ARCH} | Root free: ${ROOT_AVAIL_MB} MB"
 
 export DEBIAN_FRONTEND=noninteractive
 info "Installing SBC base/Python prerequisites..."
@@ -69,9 +69,9 @@ if [[ -f /etc/default/zramswap ]]; then
     cp -a /etc/default/zramswap "/etc/default/zramswap.bak.$(date +%Y%m%d-%H%M%S)"
 fi
 cat >/etc/default/zramswap <<EOF
-# Managed by \${SCRIPT_NAME}
+# Managed by ${SCRIPT_NAME}
 ALGO=zstd
-PERCENT=\${ZRAM_PERCENT}
+PERCENT=${ZRAM_PERCENT}
 PRIORITY=100
 EOF
 
@@ -80,7 +80,7 @@ if has_systemd; then
     if systemctl list-unit-files 2>/dev/null | grep -q '^zramswap.service'; then
         systemctl enable --now zramswap.service || warn "Could not start zramswap.service"
         if swapon --show --noheadings 2>/dev/null | grep -q zram; then
-            ok "ZRAM active at \${ZRAM_PERCENT}% profile"
+            ok "ZRAM active at ${ZRAM_PERCENT}% profile"
         else
             warn "zramswap.service exists but no active zram swap was detected"
         fi
@@ -112,12 +112,12 @@ else
     mkswap /swapfile >/dev/null
     swapon /swapfile
     grep -qE '^[[:space:]]*/swapfile[[:space:]]' /etc/fstab || echo '/swapfile none swap sw,pri=10 0 0' >>/etc/fstab
-    ok "Emergency disk swap enabled: \${SWAP_SIZE}"
+    ok "Emergency disk swap enabled: ${SWAP_SIZE}"
 fi
 
 info "Applying conservative SBC kernel/network tuning..."
 cat >"$SYSCTL_FILE" <<EOF
-# Managed by \${SCRIPT_NAME}
+# Managed by ${SCRIPT_NAME}
 vm.swappiness=100
 vm.vfs_cache_pressure=100
 fs.file-max=65536
@@ -177,9 +177,9 @@ info "CPU governor left at kernel default (power/thermal safe)"
 
 if has_systemd; then
     for svc in bluetooth.service cups.service ModemManager.service; do
-        if systemctl list-unit-files 2>/dev/null | grep -q "^\${svc}"; then
+        if systemctl list-unit-files 2>/dev/null | grep -q "^${svc}"; then
             systemctl disable --now "$svc" 2>/dev/null || true
-            info "Disabled optional service: \${svc}"
+            info "Disabled optional service: ${svc}"
         fi
     done
 fi
@@ -191,10 +191,10 @@ apt-get autoclean -y
 echo
 info "============================================================"
 ok "SBC optimization completed"
-info "RAM:       \${RAM_MB} MB"
-info "CPU:       \${CPU_THREADS} threads"
-info "Arch:      \${ARCH}"
-info "ZRAM:      \${ZRAM_PERCENT}% profile"
+info "RAM:       ${RAM_MB} MB"
+info "CPU:       ${CPU_THREADS} threads"
+info "Arch:      ${ARCH}"
+info "ZRAM:      ${ZRAM_PERCENT}% profile"
 info "Swap:"
 swapon --show 2>/dev/null || true
 info "BBR:"
@@ -203,7 +203,7 @@ info "Swappiness:"
 sysctl vm.swappiness 2>/dev/null || true
 info "Memory:"
 free -h
-info "Log: \${LOG}"
+info "Log: ${LOG}"
 info "============================================================"
 
 unset RAM_MB CPU_THREADS ROOT_AVAIL_MB ARCH ZRAM_PERCENT SWAP_SIZE
