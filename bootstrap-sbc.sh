@@ -49,7 +49,7 @@ info "RAM: ${RAM_MB} MB | CPU threads: ${CPU_THREADS} | Arch: ${ARCH} | Root fre
 export DEBIAN_FRONTEND=noninteractive
 info "Installing SBC base/Python prerequisites..."
 apt-get update
-apt-get install -y ca-certificates curl wget git python3 python3-pip python3-venv libffi-dev libssl-dev zram-tools systemd-timesyncd
+apt-get install -y unattended-upgrades ca-certificates sudo curl wget git python3 python3-pip python3-venv libffi-dev libssl-dev zram-tools systemd-timesyncd
 ok "SBC base packages installed"
 
 if has_systemd; then
